@@ -33,7 +33,7 @@
 		<a id="erosion" href="#">[Create Erosion]</a>
 		<a id="rivers" href="#">[Create Rivers]</a>
 		<a id="temperature" href="#">[Temperature]</a>
-		<a href="https://github.com/jimdoescode/jenysis"><strong>[GitHub]</strong></a>
+		<a href="https://github.com/jimdoescode/jenysis" style="font-weight: bold;">[GitHub]</a>
 	</div>
 	<canvas id="map"></canvas>
 	<script type="text/javascript" src="http://code.jquery.com/jquery-1.4.min.js"></script>
@@ -50,7 +50,7 @@
 			{
 				land.createTerrain();
 				//land.createTemperatures();
-				renderer.drawTiled(land, 5);
+				renderer.drawTiled(land, 4);
 				return false;
 			});
 			
@@ -59,7 +59,7 @@
 				if(land.terrain)
 				{
 					land.createErosion(0.2, 20);
-					renderer.drawTiled(land, 5);
+					renderer.drawTiled(land, 4);
 				}
 				else alert("Create terrain first");
 				return false;
@@ -70,7 +70,7 @@
 				if(land.terrain)
 				{
 					land.createRivers(0.1, 10);
-					renderer.drawTiled(land, 5);
+					renderer.drawTiled(land, 4);
 				}
 				else alert("Create terrain first");
 				return false;
@@ -81,7 +81,7 @@
 				if(land.terrain)
 				{
 					land.createTemperatures();
-					renderer.drawTiled(land, 5);
+					renderer.drawTiled(land, 4);
 				}
 				else alert("Create terrain first");
 				return false;
