@@ -210,12 +210,13 @@ function Temperature(terrain, oceanLevel)
 }
 
 Terrain.prototype = new Map;
-function Terrain(drainage, ocean)
+function Terrain(drainage, seaLevel)
 {
 	Map.call(this, drainage.size);
 	this.midpoint(drainage.size, 1.5);
 	this.average();
 	this.normalize(255);
+	this.seaLevel = seaLevel;
 	
 	var self = this;
 	
@@ -227,7 +228,7 @@ function Terrain(drainage, ocean)
 		var imod = i % this.size;
 		var sizeminone = this.size-1;
 		if(i < this.size || i > (this.size*(sizeminone)) || imod == 0 || imod == sizeminone)this.map[i] = {type: 'edge', elevation: 0, drainage: 0, name: 'The Edge of the World'};
-		else if(elevation < ocean)this.map[i] = {type: 'ocean', elevation: elevation, drainage: 0, name: 'The Great Sea'};
+		else if(elevation < seaLevel)this.map[i] = {type: 'ocean', elevation: elevation, drainage: 0, name: 'The Great Sea'};
 		else this.map[i] = {type: 'land', elevation: elevation, drainage: drainage.map[i], name: 'land'};
 	}
 	
@@ -235,11 +236,9 @@ function Terrain(drainage, ocean)
 	//to the specified index and not in the list of closed indexes. If 
 	//there are no lower elevations then it will lower the elevation of
 	//one of the adjacent indexes.
-	function getLowestElevationIndex(index, closed, force)
+	function getLowestElevationIndex(index, closed, clamp)
 	{
 		var lowest = self.map[index].elevation;
-		//If we are at minimum elevation, quit.
-		if(lowest == 0 && !force)return -1;
 			
 		var newindex = index;
 		var next = [index-self.size, index+self.size, index-1, index+1]; //top, bottom, left, right
@@ -265,12 +264,12 @@ function Terrain(drainage, ocean)
 					found = true;
 				}
 			}
-			if(!found && !force)return -1;
 			newindex = smallest;
 			
 			//Adjust the elevation so that it is lower.
 			//Unless it is at the minimum then we just keep it at the minimum.
-			self.map[newindex].elevation = lowest - randomRange(0, 1);
+			if(clamp && lowest <= self.seaLevel)self.map[newindex].elevation = self.seaLevel;
+			else self.map[newindex].elevation = lowest - randomRange(0, 1);
 		}
 		closed.push(newindex);
 		return newindex;
@@ -343,26 +342,28 @@ function Terrain(drainage, ocean)
 		
 		function river(index, name)
 		{
-			self.map[index].type = 'water';
-			self.map[index].name = name;
-			self.map[index].drainage = 0;
-			
+			if(self.map[index].type !== 'ocean')
+			{
+				self.map[index].type = 'water';
+				self.map[index].name = name;
+				self.map[index].drainage = 0;
+			}				
 			if(waterPerimeter(index-1, name) > 1)closed.push(index-1);
 			if(waterPerimeter(index+1, name) > 1)closed.push(index+1);
 			if(waterPerimeter(index-self.size, name) > 1)closed.push(index-self.size);
 			if(waterPerimeter(index+self.size, name) > 1)closed.push(index+self.size);
 			
-			var newindex = getLowestElevationIndex(index, closed, true);
+			var newindex = getLowestElevationIndex(index, closed, (self.map[index].type !== 'ocean'));
 			
 			//if new index is less than zero maybe we should create a lake there.
 			if(newindex < 0)return;
 			else if(self.map[newindex].type === 'edge')return;
-			/*else if(self.map[newindex].type === 'water')
+			else if(self.map[newindex].type === 'water' && self.map[newindex].name !== name)
 			{
 				//trace the water source that we found and 
 				//try to find where it hits the ocean
 				return;
-			}*/
+			}
 			else
 			{
 				//Average points around the index if they aren't the new index.
@@ -385,14 +386,14 @@ function Terrain(drainage, ocean)
 	}
 }
 
-function World(size, oceanLevel)
+function World(size, seaLevel)
 {
 	createAndFireEvent('beginWorldCreate');
 	
 	//... Create the terrain
 	this.createTerrain = function()
 	{
-		this.terrain = new Terrain(new Drainage(size), oceanLevel);
+		this.terrain = new Terrain(new Drainage(size), seaLevel);
 		createAndFireEvent('landCreated');
 	};
 	
@@ -416,7 +417,7 @@ function World(size, oceanLevel)
 	//... Determine temperatures
 	this.createTemperatures = function()
 	{
-		this.temperature = new Temperature(this.terrain, oceanLevel);
+		this.temperature = new Temperature(this.terrain, seaLevel);
 		createAndFireEvent('temperaturesCreated');
 	}
 	
